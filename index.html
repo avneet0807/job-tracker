@@ -979,8 +979,8 @@ async function extractPDFText(file) {
     reader.onload = async () => {
       try {
         const base64 = reader.result.split(',')[1];
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST", headers:getHeaders(),
+        const res = await fetch("https://job-tracker.avneetsj1808.workers.dev", {
+          method:"POST", headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
             model:"claude-sonnet-4-20250514", max_tokens:3000,
             messages:[{role:"user",content:[
@@ -999,8 +999,8 @@ async function extractPDFText(file) {
 }
 
 async function scanJDWithAI(text) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST", headers:getHeaders(),
+  const res = await fetch("https://job-tracker.avneetsj1808.workers.dev", {
+    method:"POST", headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514", max_tokens:1000,
       messages:[{role:"user",content:`Extract job data from this JD. Return ONLY JSON, no markdown:
@@ -1185,8 +1185,8 @@ async function openEmailModal(jobId) {
   document.getElementById('email-error').style.display='none';
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",headers:getHeaders(),
+    const res = await fetch("https://job-tracker.avneetsj1808.workers.dev",{
+      method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Write a recruiter outreach email for Avneet (Avi), CA, Port Melbourne.
 Job: ${job.role} at ${job.company} | Salary: ${job.salary||'n/a'} | Reports to: ${job.reporting||'n/a'} | Contact: ${job.contact||'n/a'} | Agency: ${job.recruiterCompany||'n/a'}
 Notes: ${job.notes||'none'}
