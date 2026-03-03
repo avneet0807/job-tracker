@@ -195,6 +195,20 @@ select option{background:var(--surface2);}
 .empty-state p{font-family:'Syne',sans-serif;font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px;}
 .empty-state small{font-size:12px;}
 
+.api-banner{background:linear-gradient(135deg,rgba(247,106,106,.15),rgba(247,162,106,.1));border:1px solid var(--rejected);border-radius:14px;padding:20px 24px;margin-bottom:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.api-banner.hidden{display:none;}
+.api-banner-text h3{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--rejected);margin-bottom:4px;}
+.api-banner-text p{font-size:11px;color:var(--muted);}
+.api-input-row{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap;}
+.api-input-row input{width:340px;font-family:'DM Mono',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--rejected);color:var(--text);padding:8px 12px;border-radius:7px;outline:none;}
+.api-input-row input:focus{border-color:var(--accent);}
+.api-banner{background:linear-gradient(135deg,rgba(247,106,106,.12),rgba(247,162,106,.08));border:1px solid rgba(247,106,106,.5);border-radius:14px;padding:20px 24px;margin-bottom:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.api-banner.hidden{display:none;}
+.api-banner h3{font-family:"Syne",sans-serif;font-size:14px;font-weight:700;color:var(--rejected);margin-bottom:4px;}
+.api-banner p{font-size:11px;color:var(--muted);}
+.api-row{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap;}
+.api-row input{width:320px;font-family:"DM Mono",monospace;font-size:12px;background:var(--surface2);border:1px solid rgba(247,106,106,.5);color:var(--text);padding:8px 12px;border-radius:7px;outline:none;}
+.api-row input:focus{border-color:var(--accent);}
 .toast{position:fixed;bottom:28px;right:28px;background:var(--surface2);border:1px solid var(--accent);color:var(--text);padding:11px 18px;border-radius:8px;font-size:12px;z-index:999;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:300px;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.error-toast{border-color:var(--rejected);}
@@ -214,7 +228,18 @@ select option{background:var(--surface2);}
 <div class="app">
 
   <!-- SETUP BANNER -->
-  <div class="setup-banner" id="setup-banner">
+    <div class="api-banner" id="api-banner">
+    <div style="font-size:26px;">🔑</div>
+    <div>
+      <h3>Anthropic API Key Required for JD Scanning</h3>
+      <p>Enter your key once — saved locally in your browser only, never shared with anyone.</p>
+    </div>
+    <div class="api-row">
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-...">
+      <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+    </div>
+  </div>
+<div class="setup-banner" id="setup-banner">
     <div class="setup-icon">⚡</div>
     <div class="setup-text">
       <h3>Connect to Google Sheets for permanent storage + daily email reminders</h3>
@@ -609,6 +634,33 @@ let jobs = [];
 let currentFilter = 'all';
 let scriptUrl = localStorage.getItem(SCRIPT_URL_KEY) || '';
 let isSyncing = false;
+const API_KEY_STORAGE = 'avi_jt_api_key';
+let anthropicKey = localStorage.getItem(API_KEY_STORAGE) || '';
+
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val || !val.startsWith('sk-ant')) { showToast('Invalid key — should start with sk-ant', true); return; }
+  anthropicKey = val;
+  localStorage.setItem(API_KEY_STORAGE, val);
+  document.getElementById('api-banner').classList.add('hidden');
+  showToast('API key saved ✅ — JD scanning ready');
+}
+
+function checkApiKey() {
+  if (anthropicKey) {
+    document.getElementById('api-banner').classList.add('hidden');
+  }
+}
+
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': anthropicKey,
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true'
+  };
+}
+
 
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
@@ -928,7 +980,7 @@ async function extractPDFText(file) {
       try {
         const base64 = reader.result.split(',')[1];
         const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST", headers:{"Content-Type":"application/json"},
+          method:"POST", headers:getHeaders(),
           body:JSON.stringify({
             model:"claude-sonnet-4-20250514", max_tokens:3000,
             messages:[{role:"user",content:[
@@ -948,7 +1000,7 @@ async function extractPDFText(file) {
 
 async function scanJDWithAI(text) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST", headers:{"Content-Type":"application/json"},
+    method:"POST", headers:getHeaders(),
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514", max_tokens:1000,
       messages:[{role:"user",content:`Extract job data from this JD. Return ONLY JSON, no markdown:
@@ -1134,7 +1186,7 @@ async function openEmailModal(jobId) {
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",headers:{"Content-Type":"application/json"},
+      method:"POST",headers:getHeaders(),
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Write a recruiter outreach email for Avneet (Avi), CA, Port Melbourne.
 Job: ${job.role} at ${job.company} | Salary: ${job.salary||'n/a'} | Reports to: ${job.reporting||'n/a'} | Contact: ${job.contact||'n/a'} | Agency: ${job.recruiterCompany||'n/a'}
 Notes: ${job.notes||'none'}
@@ -1180,7 +1232,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
 
-init();
+checkApiKey(); init();
 </script>
 </body>
 </html>
