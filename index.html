@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avi's Job Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0a0a0f;--s:#13131a;--s2:#1c1c26;--b:#2a2a3a;--a:#7c6af7;--a2:#f7a26a;--t:#e8e8f0;--m:#6b6b80;--sv:#4a90d9;--ap:#7c6af7;--in:#f7a26a;--of:#6bcf7f;--re:#f76a6a;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--t);min-height:100vh;}
+.wrap{max-width:1100px;margin:0 auto;padding:36px 20px;}
+h1{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:4px;}
+h1 span{color:var(--a);}
+.sub{color:var(--m);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:28px;}
+.toprow{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.stats{display:flex;gap:12px;flex-wrap:wrap;}
+.stat{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:12px 18px;text-align:center;}
+.sn{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--a);}
+.sl2{font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:1px;}
+.sync-row{display:flex;align-items:center;gap:8px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--m);}
+.sdot.ok{background:var(--of);}
+.sdot.sy{background:var(--in);animation:pu 1s infinite;}
+.sdot.er{background:var(--re);}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+.slbl{font-size:11px;color:var(--m);}
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--s);border:1px solid var(--b);border-radius:10px;padding:4px;width:fit-content;}
+.tab{font-family:'DM Mono',monospace;font-size:12px;padding:8px 16px;border-radius:7px;border:none;background:transparent;color:var(--m);cursor:pointer;transition:all .15s;}
+.tab.active{background:var(--a);color:#fff;}
+.panel{display:none;}
+.panel.active{display:block;}
+.alert-box{background:rgba(247,162,106,.1);border:1px solid rgba(247,162,106,.4);border-radius:10px;padding:14px 18px;margin-bottom:20px;}
+.alert-box h4{font-family:'Syne',sans-serif;font-size:13px;color:var(--a2);margin-bottom:10px;}
+.arow{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(247,162,106,.15);}
+.arow:last-child{border:none;}
+.bdue{font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(247,162,106,.2);color:var(--a2);}
+.bov{background:rgba(247,106,106,.2);color:var(--re);}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.metric{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:14px;}
+.mv{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:2px;}
+.ml{font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:1px;}
+.cc{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:18px;margin-bottom:18px;}
+.cc h3{font-family:'Syne',sans-serif;font-size:13px;margin-bottom:14px;}
+.fb{margin-bottom:10px;}
+.ft{display:flex;justify-content:space-between;font-size:11px;color:var(--m);margin-bottom:4px;}
+.ftr{background:var(--s2);border-radius:4px;height:8px;overflow:hidden;}
+.ff{height:100%;border-radius:4px;transition:width .6s;}
+.sr{display:flex;justify-content:space-between;font-size:12px;padding:7px 0;border-bottom:1px solid var(--b);}
+.sr:last-child{border:none;}
+.drop{border:2px dashed var(--b);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:20px;background:var(--s);}
+.drop:hover,.drop.over{border-color:var(--a);background:rgba(124,106,247,.05);}
+.drop.scanning{border-color:var(--a2);animation:pb 1s infinite;}
+@keyframes pb{0%,100%{border-color:var(--a2)}50%{border-color:rgba(247,162,106,.3)}}
+.di{font-size:26px;margin-bottom:8px;}
+.dt{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px;}
+.ds{font-size:11px;color:var(--m);}
+.ds b{color:var(--a);}
+.sm{color:var(--a2);font-size:12px;display:none;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+.sm.show{display:flex;}
+#jfi{display:none;}
+.toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.btn{font-family:'DM Mono',monospace;font-size:12px;padding:9px 16px;border-radius:6px;border:1px solid var(--b);cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.bp{background:var(--a);color:#fff;border-color:var(--a);}
+.bp:hover{background:#9180f9;}
+.bg{background:transparent;color:var(--m);}
+.bg:hover{background:var(--s2);color:var(--t);}
+.bgr{background:transparent;color:var(--of);border-color:var(--of);}
+.bgr:hover{background:rgba(107,207,127,.1);}
+.bo{background:transparent;color:var(--a2);border-color:var(--a2);}
+.bo:hover{background:rgba(247,162,106,.1);}
+.filters{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.fbtn{font-family:'DM Mono',monospace;font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--b);background:transparent;color:var(--m);cursor:pointer;transition:all .15s;}
+.fbtn.active,.fbtn:hover{background:var(--s2);color:var(--t);border-color:var(--a);}
+.fbtn.active{color:var(--a);}
+.grid{display:grid;gap:14px;}
+.card{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:20px;transition:all .2s;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:12px 0 0 12px;}
+.card[data-st="Saved"]::before{background:var(--sv);}
+.card[data-st="Applied"]::before{background:var(--ap);}
+.card[data-st="Interview"]::before{background:var(--in);}
+.card[data-st="Offer"]::before{background:var(--of);}
+.card[data-st="Rejected"]::before{background:var(--re);}
+.card:hover{border-color:var(--a);transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,106,247,.1);}
+.ctop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.cti{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:3px;}
+.cco{color:var(--a);font-size:12px;}
+.cac{display:flex;gap:5px;flex-shrink:0;}
+.ic{width:28px;height:28px;border-radius:6px;border:1px solid var(--b);background:var(--s2);color:var(--m);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;}
+.ic:hover{color:var(--t);border-color:var(--a);}
+.ic.em:hover{color:var(--a2);border-color:var(--a2);}
+.ic.dl:hover{color:var(--re);border-color:var(--re);}
+.meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;align-items:center;}
+.mi{font-size:11px;color:var(--m);}
+.mi span{color:var(--t);}
+.sbadge{display:inline-block;font-size:10px;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:1px;font-weight:500;}
+.s-Saved{background:rgba(74,144,217,.15);color:var(--sv);}
+.s-Applied{background:rgba(124,106,247,.15);color:var(--ap);}
+.s-Interview{background:rgba(247,162,106,.15);color:var(--in);}
+.s-Offer{background:rgba(107,207,127,.15);color:var(--of);}
+.s-Rejected{background:rgba(247,106,106,.15);color:var(--re);}
+.fub{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 9px;border-radius:20px;background:rgba(247,162,106,.15);color:var(--a2);}
+.fub.ov{background:rgba(247,106,106,.15);color:var(--re);}
+.rs{background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:8px 12px;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;}
+.ri{font-size:11px;color:var(--m);}
+.ri span{color:var(--a2);}
+.notes{font-size:11px;color:var(--m);background:var(--s2);padding:8px 11px;border-radius:6px;margin-top:8px;line-height:1.6;border-left:2px solid var(--b);white-space:pre-line;}
+.ov2{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);z-index:100;align-items:center;justify-content:center;padding:20px;}
+.ov2.open{display:flex;}
+.modal{background:var(--s);border:1px solid var(--b);border-radius:16px;padding:28px;width:100%;max-width:640px;max-height:93vh;overflow-y:auto;position:relative;}
+.modal h2{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:18px;}
+.sec{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:2px;margin:16px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--b);}
+.fg{margin-bottom:12px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+label{display:block;font-size:11px;color:var(--m);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+input,select,textarea{width:100%;font-family:'DM Mono',monospace;font-size:12px;background:var(--s2);border:1px solid var(--b);color:var(--t);padding:8px 11px;border-radius:7px;outline:none;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--a);}
+textarea{resize:vertical;min-height:70px;}
+select option{background:var(--s2);}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+.xb{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:6px;border:1px solid var(--b);background:var(--s2);color:var(--m);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.xb:hover{color:var(--t);}
+.esu{background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:9px 12px;font-size:12px;color:var(--a2);margin-bottom:8px;}
+.ebo{background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:14px;font-size:12px;line-height:1.8;white-space:pre-wrap;min-height:160px;}
+.elb{font-size:10px;color:var(--m);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+.ecp{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;}
+.dots{display:inline-flex;gap:4px;align-items:center;}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--a);animation:bk 1.2s infinite;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes bk{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.empty{text-align:center;padding:60px 20px;color:var(--m);}
+.empty .ei{font-size:40px;margin-bottom:12px;opacity:.4;}
+.empty p{font-family:'Syne',sans-serif;font-size:16px;color:var(--t);margin-bottom:6px;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--a);color:var(--t);padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:280px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.err{border-color:var(--re);}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--b);border-radius:3px;}
+@media(max-width:600px){.fr{grid-template-columns:1fr;}.stats{flex-wrap:wrap;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Job<span>Track</span></h1>
+  <div class="sub">Avi's Application Command Centre</div>
+  <div class="toprow">
+    <div class="stats">
+      <div class="stat"><div class="sn" id="s1">0</div><div class="sl2">Total</div></div>
+      <div class="stat"><div class="sn" id="s2" style="color:var(--in)">0</div><div class="sl2">Active</div></div>
+      <div class="stat"><div class="sn" id="s3" style="color:var(--of)">0</div><div class="sl2">Offers</div></div>
+      <div class="stat"><div class="sn" id="s4" style="color:var(--a2)">0%</div><div class="sl2">Response</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="sync-row"><div class="sdot" id="sdot"></div><span class="slbl" id="slbl">Local</span></div>
+      <button class="btn bg" style="font-size:11px;padding:5px 12px;" onclick="openModal('sov')">Connect Sheets</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="goTab('d')">Dashboard</button>
+    <button class="tab" onclick="goTab('j')">Jobs</button>
+    <button class="tab" onclick="goTab('r')">Recruiters</button>
+  </div>
+  <div class="panel active" id="pd">
+    <div id="ab"></div>
+    <div class="metrics" id="mx"></div>
+    <div class="cc"><h3>Application Funnel</h3><div id="fn"></div></div>
+    <div class="cc"><h3>Stalled — Applied 7+ Days</h3><div id="st"></div></div>
+  </div>
+  <div class="panel" id="pj">
+    <div class="drop" id="dz">
+      <div class="di">📄</div>
+      <div class="dt">Drop a Job Description to auto-fill everything</div>
+      <div class="ds">PDF or text — AI extracts <b>role, salary, reporting line, recruiter name, phone and email</b></div>
+      <div class="sm" id="sm"><div class="dots"><span></span><span></span><span></span></div><span>Scanning...</span></div>
+      <input type="file" id="jfi" accept=".pdf,.txt">
+    </div>
+    <div class="toolbar">
+      <button class="btn bp" id="addbtn">+ Add Manually</button>
+      <button class="btn bgr" onclick="expJ()">Export Jobs</button>
+      <button class="btn bg" id="clf" style="display:none" onclick="setF('all')">Clear Filter</button>
+    </div>
+    <div class="filters">
+      <button class="fbtn active" onclick="setF('all')" data-f="all">All</button>
+      <button class="fbtn" onclick="setF('Saved')" data-f="Saved">Saved</button>
+      <button class="fbtn" onclick="setF('Applied')" data-f="Applied">Applied</button>
+      <button class="fbtn" onclick="setF('Interview')" data-f="Interview">Interview</button>
+      <button class="fbtn" onclick="setF('Offer')" data-f="Offer">Offer</button>
+      <button class="fbtn" onclick="setF('Rejected')" data-f="Rejected">Rejected</button>
+    </div>
+    <div class="grid" id="jg"></div>
+  </div>
+  <div class="panel" id="pr">
+    <div class="toolbar"><button class="btn bgr" onclick="expR()">Export Recruiter Contacts</button></div>
+    <div class="grid" id="rg"></div>
+  </div>
+</div>
+
+<div class="ov2" id="jov">
+  <div class="modal">
+    <button class="xb" onclick="closeModal('jov')">x</button>
+    <h2 id="mh">Add Job</h2>
+    <input type="hidden" id="eid">
+    <div class="sec">Role</div>
+    <div class="fr"><div class="fg"><label>Company</label><input id="fc" placeholder="Noble People"></div><div class="fg"><label>Role</label><input id="fro" placeholder="Finance Business Partner"></div></div>
+    <div class="fr"><div class="fg"><label>Salary</label><input id="fsa" placeholder="$120k-$150k"></div><div class="fg"><label>Reporting To</label><input id="fre" placeholder="CFO / Finance Manager"></div></div>
+    <div class="fr"><div class="fg"><label>Location</label><input id="flo" placeholder="Melbourne VIC (Hybrid)"></div><div class="fg"><label>Status</label><select id="fst"><option>Saved</option><option>Applied</option><option>Interview</option><option>Offer</option><option>Rejected</option></select></div></div>
+    <div class="fg"><label>Job URL</label><input id="fu" placeholder="https://seek.com.au/..."></div>
+    <div class="sec">Recruiter</div>
+    <div class="fr"><div class="fg"><label>Recruiter Name</label><input id="fn2" placeholder="Murray Noble"></div><div class="fg"><label>Agency</label><input id="fa" placeholder="Robert Half"></div></div>
+    <div class="fr"><div class="fg"><label>Email</label><input type="email" id="fe" placeholder="murray@agency.com.au"></div><div class="fg"><label>Phone</label><input id="fp" placeholder="0413 555 892"></div></div>
+    <div class="sec">Tracking</div>
+    <div class="fr"><div class="fg"><label>Date Applied</label><input type="date" id="fad"></div><div class="fg"><label>Follow-up Date</label><input type="date" id="ffu"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="fno" placeholder="Key requirements, interview notes..."></textarea></div>
+    <div class="mact"><button class="btn bg" onclick="closeModal('jov')">Cancel</button><button class="btn bp" onclick="svJ()">Save Job</button></div>
+  </div>
+</div>
+
+<div class="ov2" id="eov">
+  <div class="modal">
+    <button class="xb" onclick="closeModal('eov')">x</button>
+    <h2>Recruiter Outreach Email</h2>
+    <div id="el2" style="text-align:center;padding:36px 0;"><div class="dots"><span></span><span></span><span></span></div><p style="margin-top:10px;font-size:12px;color:var(--m)">Generating...</p></div>
+    <div id="ec2" style="display:none;">
+      <div class="elb">Subject</div><div class="esu" id="esu"></div>
+      <div class="elb" style="margin-top:10px;">Body</div><div class="ebo" id="ebo"></div>
+      <div class="ecp"><button class="btn bg" onclick="cpE('esu','Subject copied')">Copy Subject</button><button class="btn bo" onclick="cpE('ebo','Body copied')">Copy Body</button><button class="btn bp" onclick="cpAll()">Copy All</button></div>
+    </div>
+    <div id="ee2" style="display:none;color:var(--re);font-size:12px;padding:20px;text-align:center;"></div>
+  </div>
+</div>
+
+<div class="ov2" id="sov">
+  <div class="modal" style="max-width:500px;">
+    <button class="xb" onclick="closeModal('sov')">x</button>
+    <h2>Connect Google Sheets</h2>
+    <p style="font-size:12px;color:var(--m);margin-bottom:16px;line-height:1.7;">Paste your Apps Script Web App URL to save data permanently and get daily email reminders.</p>
+    <div class="fg"><label>Apps Script URL</label><input id="surl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="mact"><button class="btn bg" onclick="closeModal('sov')">Cancel</button><button class="btn bp" onclick="svSheet()">Connect</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var W = 'https://job-tracker.avneetsj1808.workers.dev';
+var LK = 'avijt5'; var SK = 'avijt_sh';
+var jobs = []; var filt = 'all';
+var shUrl = localStorage.getItem(SK) || '';
+
+function init() {
+  try { var r = localStorage.getItem(LK); if(r) jobs = JSON.parse(r); } catch(e){}
+  if (shUrl) {
+    ss('sy','Syncing...');
+    fetch(shUrl).then(function(r){return r.json();}).then(function(d){
+      if(d.jobs){jobs=d.jobs;localStorage.setItem(LK,JSON.stringify(jobs));}
+      ss('ok','Synced');render();
+    }).catch(function(){ss('er','Sheets error');render();});
+  } else { render(); }
+}
+
+function ss(c,l){document.getElementById('sdot').className='sdot '+c;document.getElementById('slbl').textContent=l;}
+
+function push() {
+  if(!shUrl)return;
+  fetch(shUrl,{method:'POST',body:JSON.stringify({action:'saveAll',jobs:jobs}),headers:{'Content-Type':'text/plain'}})
+    .then(function(){ss('ok','Saved');}).catch(function(){ss('er','Failed');});
+}
+
+function render(){upStats();upDash();upJobs();upRecs();}
+
+function upStats(){
+  var t=jobs.length,ac=jobs.filter(function(j){return j.s==='Applied'||j.s==='Interview';}).length;
+  var of=jobs.filter(function(j){return j.s==='Offer';}).length;
+  var dn=jobs.filter(function(j){return['Applied','Interview','Offer','Rejected'].indexOf(j.s)>-1;}).length;
+  var rt=dn>0?Math.round(jobs.filter(function(j){return j.s==='Interview'||j.s==='Offer';}).length/dn*100):0;
+  document.getElementById('s1').textContent=t;
+  document.getElementById('s2').textContent=ac;
+  document.getElementById('s3').textContent=of;
+  document.getElementById('s4').textContent=rt+'%';
+}
+
+function upDash(){
+  var now=new Date();now.setHours(0,0,0,0);
+  var al=jobs.filter(function(j){
+    if(!j.fu||j.s==='Rejected'||j.s==='Offer')return false;
+    var d=new Date(j.fu);d.setHours(0,0,0,0);
+    return Math.round((d-now)/864e5)<=7;
+  }).sort(function(a,b){return new Date(a.fu)-new Date(b.fu);});
+  var ab=document.getElementById('ab');
+  ab.innerHTML=al.length?'<div class="alert-box"><h4>Follow-ups Due ('+al.length+')</h4>'+al.map(function(j){
+    var df=Math.round((new Date(j.fu)-now)/864e5),ov=df<0;
+    return '<div class="arow"><span><b>'+j.ro+'</b> @ '+j.co+(j.cn?' - '+j.cn:'')+'</span><span class="bdue'+(ov?' bov':'')+'">'+
+      (ov?Math.abs(df)+'d overdue':df===0?'Today':'In '+df+'d')+'</span></div>';
+  }).join('')+'</div>':'';
+  var ct={Saved:0,Applied:0,Interview:0,Offer:0,Rejected:0};
+  jobs.forEach(function(j){if(ct[j.s]!==undefined)ct[j.s]++;});
+  var cl={Saved:'var(--sv)',Applied:'var(--ap)',Interview:'var(--in)',Offer:'var(--of)',Rejected:'var(--re)'};
+  document.getElementById('mx').innerHTML=Object.keys(ct).map(function(k){
+    return '<div class="metric"><div class="mv" style="color:'+cl[k]+'">'+ct[k]+'</div><div class="ml">'+k+'</div></div>';
+  }).join('');
+  var mx=Math.max.apply(null,Object.values(ct).concat([1]));
+  document.getElementById('fn').innerHTML=Object.keys(ct).map(function(k){
+    return '<div class="fb"><div class="ft"><span>'+k+'</span><span>'+ct[k]+'</span></div><div class="ftr"><div class="ff" style="width:'+Math.round(ct[k]/mx*100)+'%;background:'+cl[k]+'"></div></div></div>';
+  }).join('');
+  var sl=jobs.filter(function(j){
+    if(j.s!=='Applied'||!j.ad)return false;
+    var d=new Date(j.ad);d.setHours(0,0,0,0);
+    return Math.round((now-d)/864e5)>=7;
+  });
+  document.getElementById('st').innerHTML=sl.length?sl.map(function(j){
+    var dy=Math.round((now-new Date(j.ad+'T00:00:00'))/864e5);
+    return '<div class="sr"><span><b>'+j.ro+'</b> @ '+j.co+(j.cn?' - '+j.cn:'')+'</span><span style="color:var(--m);font-size:11px;">'+dy+'d</span></div>';
+  }).join(''):'<div style="color:var(--of);font-size:12px;padding:12px 0;">Nothing stalled</div>';
+}
+
+function upJobs(){
+  var g=document.getElementById('jg'),now=new Date();now.setHours(0,0,0,0);
+  var ls=filt==='all'?jobs:jobs.filter(function(j){return j.s===filt;});
+  if(!ls.length){g.innerHTML='<div class="empty"><div class="ei">'+(filt==='all'?'📋':'🔍')+'</div><p>'+(filt==='all'?'No jobs yet':'No '+filt+' jobs')+'</p></div>';return;}
+  g.innerHTML=ls.map(function(j){
+    var fb='';
+    if(j.fu){var d=new Date(j.fu);d.setHours(0,0,0,0);var df=Math.round((d-now)/864e5),ov=df<0;
+      fb='<span class="fub'+(ov?' ov':'')+'">'+( ov?'Overdue '+Math.abs(df)+'d':df===0?'Today':'In '+df+'d')+'</span>';}
+    return '<div class="card" data-st="'+j.s+'">'+
+      '<div class="ctop"><div><div class="cti">'+j.ro+'</div><div class="cco">'+j.co+(j.lo?' &middot; <span style="color:var(--m)">'+j.lo+'</span>':'')+'</div></div>'+
+      '<div class="cac"><button class="ic em" onclick="opEm(\''+j.id+'\')">e</button><button class="ic" onclick="opEd(\''+j.id+'\')">p</button><button class="ic dl" onclick="dlJ(\''+j.id+'\')">x</button></div></div>'+
+      '<div class="meta"><span class="sbadge s-'+j.s+'">'+j.s+'</span>'+fb+
+        (j.sa?'<span class="mi">$ <span>'+j.sa+'</span></span>':'')+
+        (j.rp?'<span class="mi">Reports: <span>'+j.rp+'</span></span>':'')+
+        (j.ad?'<span class="mi">Applied: <span>'+fd(j.ad)+'</span></span>':'')+
+      '</div>'+
+      ((j.cn||j.em||j.ph)?'<div class="rs">'+
+        (j.cn?'<span class="ri">'+j.cn+(j.ag?' @ '+j.ag:'')+'</span>':'')+
+        (j.ph?'<span class="ri">'+j.ph+'</span>':'')+
+        (j.em?'<span class="ri">'+j.em+'</span>':'')+
+      '</div>':'')+
+      (j.no?'<div class="notes">'+j.no+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function upRecs(){
+  var g=document.getElementById('rg'),wc=jobs.filter(function(j){return j.cn||j.em||j.ph;});
+  if(!wc.length){g.innerHTML='<div class="empty"><div class="ei">👥</div><p>No recruiter contacts yet</p></div>';return;}
+  var seen={};
+  wc.forEach(function(j){var k=(j.cn||'')+'|'+(j.ag||'');if(!seen[k])seen[k]={n:j.cn,ag:j.ag,em:j.em,ph:j.ph,rl:[]};seen[k].rl.push(j.ro+' @ '+j.co+' ['+j.s+']');});
+  g.innerHTML=Object.values(seen).map(function(r){
+    return '<div class="card" data-st="Applied">'+
+      '<div class="ctop"><div><div class="cti">'+(r.n||'Unknown')+'</div><div class="cco" style="color:var(--a2)">'+(r.ag||'Independent')+'</div></div></div>'+
+      '<div class="rs">'+(r.ph?'<span class="ri">'+r.ph+'</span>':'')+(r.em?'<span class="ri">'+r.em+'</span>':'')+'</div>'+
+      '<div class="notes">'+r.rl.join('\n')+'</div></div>';
+  }).join('');
+}
+
+function goTab(t){
+  var ns=['d','j','r'],pn=['pd','pj','pr'];
+  document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('active',ns[i]===t);});
+  document.querySelectorAll('.panel').forEach(function(el,i){el.classList.toggle('active',pn[i]==='p'+t);});
+}
+
+function setF(f){
+  filt=f;
+  document.querySelectorAll('.fbtn').forEach(function(b){b.classList.toggle('active',b.dataset.f===f);});
+  document.getElementById('clf').style.display=f!=='all'?'block':'none';
+  upJobs();
+}
+
+var dz=document.getElementById('dz');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');var f=e.dataTransfer.files[0];if(f)pf(f);});
+dz.addEventListener('click',function(e){if(e.target!==document.getElementById('jfi'))document.getElementById('jfi').click();});
+document.getElementById('jfi').addEventListener('change',function(e){if(e.target.files[0])pf(e.target.files[0]);e.target.value='';});
+
+function pf(file){
+  dz.classList.add('scanning');document.getElementById('sm').classList.add('show');
+  var reader=new FileReader();
+  reader.onload=function(){
+    var b64=reader.result.split(',')[1];
+    var isPDF=file.type==='application/pdf';
+    var body;
+    if(isPDF){
+      body={model:'claude-sonnet-4-20250514',max_tokens:3000,messages:[{role:'user',content:[
+        {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
+        {type:'text',text:'Extract all text from this PDF. Return only the raw text.'}
+      ]}]};
+    } else {
+      var tx=decodeURIComponent(escape(atob(b64)));
+      body={model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:
+        'Extract job details. Return ONLY valid JSON no markdown:\n'+
+        '{"co":"company","ro":"role","sa":"salary or null","lo":"location","rp":"reports to","cn":"recruiter name","ag":"agency","em":"email","ph":"phone","ur":"url","no":"5 bullet points each on own line"}\n\nJD:\n'+tx.slice(0,6000)
+      }]};
+    }
+    fetch(W,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.error)throw new Error(JSON.stringify(d.error));
+      var tx2=d.content.map(function(i){return i.text||'';}).join('');
+      if(isPDF){
+        return fetch(W,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:
+            'Extract job details. Return ONLY valid JSON no markdown:\n'+
+            '{"co":"company","ro":"role","sa":"salary or null","lo":"location","rp":"reports to","cn":"recruiter name","ag":"agency","em":"email","ph":"phone","ur":"url","no":"5 bullet points each on own line"}\n\nText:\n'+tx2.slice(0,6000)
+          }]
+        })}).then(function(r){return r.json();}).then(function(d2){
+          var raw=d2.content.map(function(i){return i.text||'';}).join('').trim().replace(/```json|```/g,'').trim();
+          fill(JSON.parse(raw));
+        });
+      } else {
+        var raw=tx2.trim().replace(/```json|```/g,'').trim();
+        fill(JSON.parse(raw));
+      }
+    })
+    .catch(function(e){toast('Error: '+e.message,true);})
+    .finally(function(){dz.classList.remove('scanning');document.getElementById('sm').classList.remove('show');});
+  };
+  reader.readAsDataURL(file);
+}
+
+function fill(p){
+  opAdd();goTab('j');
+  var m={fc:'co',fro:'ro',fsa:'sa',flo:'lo',fre:'rp',fn2:'cn',fa:'ag',fe:'em',fp:'ph',fu:'ur',fno:'no'};
+  Object.keys(m).forEach(function(id){if(p[m[id]])document.getElementById(id).value=p[m[id]];});
+  toast('JD scanned - review and save');
+}
+
+function openModal(id){var el=document.getElementById(id);el.style.display="flex";}
+function closeModal(id){var el=document.getElementById(id);el.style.display="none";}
+
+function opAdd(){
+  document.getElementById('mh').textContent='Add Job';
+  document.getElementById('eid').value='';
+  ['fc','fro','fsa','fre','flo','fn2','fa','fe','fp','fu','fno','fad','ffu'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('fst').value='Saved';
+  openModal('jov');
+}
+
+function opEd(id){
+  var j=null;jobs.forEach(function(x){if(x.id===id)j=x;});if(!j)return;
+  document.getElementById('mh').textContent='Edit Job';
+  document.getElementById('eid').value=id;
+  document.getElementById('fc').value=j.co||'';
+  document.getElementById('fro').value=j.ro||'';
+  document.getElementById('fsa').value=j.sa||'';
+  document.getElementById('fre').value=j.rp||'';
+  document.getElementById('flo').value=j.lo||'';
+  document.getElementById('fst').value=j.s||'Saved';
+  document.getElementById('fn2').value=j.cn||'';
+  document.getElementById('fa').value=j.ag||'';
+  document.getElementById('fe').value=j.em||'';
+  document.getElementById('fp').value=j.ph||'';
+  document.getElementById('fu').value=j.ur||'';
+  document.getElementById('fad').value=j.ad||'';
+  document.getElementById('ffu').value=j.fu||'';
+  document.getElementById('fno').value=j.no||'';
+  openModal('jov');
+}
+
+function svJ(){
+  var co=document.getElementById('fc').value.trim(),ro=document.getElementById('fro').value.trim();
+  if(!co||!ro){toast('Company and Role required',true);return;}
+  var id=document.getElementById('eid').value,now=new Date().toISOString();
+  var d={co:co,ro:ro,sa:document.getElementById('fsa').value.trim(),rp:document.getElementById('fre').value.trim(),
+    lo:document.getElementById('flo').value.trim(),s:document.getElementById('fst').value,
+    cn:document.getElementById('fn2').value.trim(),ag:document.getElementById('fa').value.trim(),
+    em:document.getElementById('fe').value.trim(),ph:document.getElementById('fp').value.trim(),
+    ur:document.getElementById('fu').value.trim(),ad:document.getElementById('fad').value,
+    fu:document.getElementById('ffu').value,no:document.getElementById('fno').value.trim(),lu:now};
+  if(id){for(var i=0;i<jobs.length;i++){if(jobs[i].id===id){jobs[i]=Object.assign({},jobs[i],d);break;}}toast('Updated');}
+  else{d.id=Date.now().toString();d.added=now;jobs.unshift(d);toast('Saved');}
+  localStorage.setItem(LK,JSON.stringify(jobs));push();render();closeModal('jov');
+}
+
+function dlJ(id){
+  if(!confirm('Remove?'))return;
+  jobs=jobs.filter(function(j){return j.id!==id;});
+  localStorage.setItem(LK,JSON.stringify(jobs));push();render();toast('Removed');
+}
+
+function opEm(id){
+  var j=null;jobs.forEach(function(x){if(x.id===id)j=x;});if(!j)return;
+  openModal('eov');
+  document.getElementById('el2').style.display='block';
+  document.getElementById('ec2').style.display='none';
+  document.getElementById('ee2').style.display='none';
+  fetch(W,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:
+      'Write recruiter outreach email for Avneet (Avi), CA, Port Melbourne.\n'+
+      'Job: '+j.ro+' at '+j.co+' | Salary: '+(j.sa||'n/a')+' | Reports to: '+(j.rp||'n/a')+' | Contact: '+(j.cn||'n/a')+' | Agency: '+(j.ag||'n/a')+'\n'+
+      'Background: CA qualified, Distinction Financial Modelling. AWL NSW: reported to CFO, partnered 12/24 branches. Trident Logistics: cash flow +200%, profitability +15%. RSM Australia.\n'+
+      'Rules: max 130 words. Hook on role. One positioning line. One achievement. 10-min call CTA. Direct confident warm.\n'+
+      'Return ONLY JSON: {"subject":"...","body":"..."}'
+    }]
+  })})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error)throw new Error(JSON.stringify(d.error));
+    var raw=d.content.map(function(i){return i.text||'';}).join('').trim().replace(/```json|```/g,'').trim();
+    var p=JSON.parse(raw);
+    document.getElementById('esu').textContent=p.subject;
+    document.getElementById('ebo').textContent=p.body;
+    document.getElementById('el2').style.display='none';
+    document.getElementById('ec2').style.display='block';
+  })
+  .catch(function(e){
+    document.getElementById('el2').style.display='none';
+    document.getElementById('ee2').style.display='block';
+    document.getElementById('ee2').textContent='Error: '+e.message;
+  });
+}
+
+function cpE(id,m){navigator.clipboard.writeText(document.getElementById(id).textContent);toast(m);}
+function cpAll(){navigator.clipboard.writeText('Subject: '+document.getElementById('esu').textContent+'\n\n'+document.getElementById('ebo').textContent);toast('Copied');}
+
+function svSheet(){
+  var u=document.getElementById('surl').value.trim();
+  if(!u||!u.includes('script.google.com')){toast('Invalid URL',true);return;}
+  shUrl=u;localStorage.setItem(SK,u);closeModal('sov');ss('sy','Connecting...');push();toast('Connected to Sheets!');
+}
+
+function expJ(){
+  if(!jobs.length){toast('No jobs');return;}
+  var rows=jobs.map(function(j){return{Company:j.co,Role:j.ro,Status:j.s,Salary:j.sa||'',Location:j.lo||'','Reports To':j.rp||'',Recruiter:j.cn||'',Agency:j.ag||'',Email:j.em||'',Phone:j.ph||'',Applied:j.ad||'','Follow-up':j.fu||'',URL:j.ur||'',Notes:j.no||''};});
+  var ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[18,24,12,14,20,14,18,16,26,12,12,12,30,45].map(function(w){return{wch:w};});
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Jobs');XLSX.writeFile(wb,'Avi_Jobs.xlsx');toast('Exported');
+}
+
+function expR(){
+  var wc=jobs.filter(function(j){return j.cn||j.em||j.ph;});
+  if(!wc.length){toast('No contacts');return;}
+  var seen={};
+  wc.forEach(function(j){var k=(j.cn||'')+'|'+(j.ag||'');if(!seen[k])seen[k]={Recruiter:j.cn||'',Agency:j.ag||'',Email:j.em||'',Phone:j.ph||'',Roles:[]};seen[k].Roles.push(j.ro+' @ '+j.co);});
+  var rows=Object.values(seen).map(function(r){return{Recruiter:r.Recruiter,Agency:r.Agency,Email:r.Email,Phone:r.Phone,Roles:r.Roles.join(' | ')};});
+  var ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[20,18,28,14,50].map(function(w){return{wch:w};});
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recruiters');XLSX.writeFile(wb,'Avi_Recruiters.xlsx');toast('Exported');
+}
+
+function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});}
+
+function toast(msg,err){
+  var t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' err':'');
+  t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);
+}
+
+document.querySelectorAll('.ov2').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.style.display="none";});});
+document.getElementById('addbtn').addEventListener('click',function(){opAdd();});
+
+init();
+</script>
+</body>
+</html>
